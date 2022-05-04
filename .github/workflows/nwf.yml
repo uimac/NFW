@@ -10,7 +10,7 @@ env:
   # Customize the CMake build type here (Release, Debug, etc.)
   BUILD_TYPE: Release
   BULID_PLATFORM: x64
-  VISUAL_STUDIO: VisualStudio 17 2022
+  VISUAL_STUDIO: Visual Studio 17 2022
 
 jobs:
   build:
