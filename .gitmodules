@@ -1,3 +1,9 @@
 [submodule "lib/NRI"]
 	path = lib/NRI
 	url = https://github.com/NVIDIAGameWorks/NRI.git
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "lib/imgui"]
+	path = lib/imgui
+	url = https://github.com/ocornut/imgui.git

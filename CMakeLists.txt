@@ -20,13 +20,36 @@ if(${GIT_FOUND} AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
     endif()
 endif()
 
+# lib/NRI
 option(NIR_STATIC_LIBRARY "" ON)
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/NRI)
+
+# lib/glfw
+set(GLFW_STANDALONE FALSE)
+option(GLFW_BUILD_DOCS "" OFF)
+option(GLFW_INSTALL "" OFF)
+set(GLFW_LIBRARY_TYPE "STATIC")
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/glfw)
+
+# lib/imgui
+add_subdirectory(${CMAKE_SOURCE_DIR}/cmake/imgui)
 
 # コンパイルフラグ
 set(CMAKE_CXX_FLAGS "/EHsc /wd4190 /bigobj /MP")
 set(CMAKE_CXX_FLAGS_DEBUG "/MD /Od /Z7 ")
 set(CMAKE_CXX_FLAGS_RELEASE "/MD ")
+
+# プリプロセッサ
+add_definitions(
+  -DUNICODE
+  -D_UNICODE
+  -DWIN32_LEAN_AND_MEAN
+  -D_CRT_SECURE_NO_WARNINGS
+  -DGLFW_EXPOSE_NATIVE_WIN32
+  -DNOMINMAX
+  -D_USE_MATH_DEFINES
+  -DNDEBUG
+)
 
 # MinSizeRelとRelWithDebInfoの選択肢を抑制
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs" FORCE)
@@ -67,6 +90,8 @@ set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 add_subdirectory(src)
 
 # 依存関係
+add_dependencies(NFW imgui)
+add_dependencies(NFW glfw)
 add_dependencies(NFW NRI)
 
 # スタートアッププロジェクトの設定
