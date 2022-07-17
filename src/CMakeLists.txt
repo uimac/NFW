@@ -5,6 +5,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/lib/glfw/include)
 include_directories(${CMAKE_SOURCE_DIR}/lib/imgui)
 include_directories(${CMAKE_SOURCE_DIR}/lib/NRI/include)
+include_directories(${CMAKE_SOURCE_DIR}/lib/glm)
 
 file(GLOB NFWSrc
     "*.h"

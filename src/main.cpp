@@ -14,7 +14,7 @@ int main()
 	GLFWwindow* window = glfwCreateWindow(800, 600, "NFW", nullptr, nullptr);
 
 	using namespace nwf;
-	Simple* simple = new Simple(glfwGetWin32Window(window));
+	Simple* simple = new Simple(glfwGetWin32Window(window), {800, 600});
 	simple->Init();
 
 	uint32_t i = 0;

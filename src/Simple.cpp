@@ -83,9 +83,10 @@ namespace nwf
 	class Simple::Impl
 	{
 	public:
-		Impl::Impl(void* hwnd)
+		Impl::Impl(void* hwnd, glm::uvec2 resolution)
 		{
 			m_window.windows.hwnd = hwnd;
+			m_resolution = resolution;
 		}
 
 		Impl::~Impl()
@@ -148,8 +149,8 @@ namespace nwf
 				swapChainDesc.commandQueue = m_commandQueue;
 				swapChainDesc.format = nri::SwapChainFormat::BT709_G22_8BIT;
 				swapChainDesc.verticalSyncInterval = 0;
-				swapChainDesc.width = 800;
-				swapChainDesc.height = 600;
+				swapChainDesc.width = m_resolution.x;
+				swapChainDesc.height = m_resolution.y;
 				swapChainDesc.textureNum = SWAP_CHAIN_TEXTURE_NUM;
 				NRI_ABORT_ON_FAILURE(NRI.CreateSwapChain(*m_device, swapChainDesc, m_swapChain));
 
@@ -188,10 +189,9 @@ namespace nwf
 			return true;
 		}
 
-		void SetResolution(uint32_t width, uint32_t height)
+		void SetResolution(glm::uvec2 resolution)
 		{
-			m_width = width;
-			m_height = height;
+			m_resolution = resolution;
 		}
 
 		void Prepare(uint32_t frameIndex)
@@ -200,8 +200,8 @@ namespace nwf
 
 		void Render(uint32_t frameIndex)
 		{
-			const uint32_t windowWidth = 800;
-			const uint32_t windowHeight = 600;
+			const uint32_t windowWidth = m_resolution.x;
+			const uint32_t windowHeight = m_resolution.y;
 			const uint32_t bufferedFrameIndex = frameIndex % BUFFERED_FRAME_MAX_NUM;
 			const Frame& frame = m_frames[bufferedFrameIndex];
 
@@ -267,10 +267,8 @@ namespace nwf
 		}
 
 	private:
-		uint32_t m_width;
-		uint32_t m_height;
-
 		NRIInterface NRI = {};
+		glm::uvec2 m_resolution;
 		nri::Device* m_device = nullptr;
 		nri::SwapChain* m_swapChain = nullptr;
 		nri::CommandQueue* m_commandQueue = nullptr;
@@ -284,8 +282,8 @@ namespace nwf
 	};
 
 
-	Simple::Simple(void* hwnd)
-		: m_impl(std::make_unique<Impl>(hwnd))
+	Simple::Simple(void* hwnd, glm::uvec2 resolution)
+		: m_impl(std::make_unique<Impl>(hwnd, resolution))
 	{}
 
 	Simple::~Simple() {}
@@ -293,6 +291,6 @@ namespace nwf
 	bool Simple::Init() { return m_impl->Init(); }
 	void Simple::Prepare(uint32_t frameIndex) { m_impl->Prepare(frameIndex); }
 	void Simple::Render(uint32_t frameIndex) { m_impl->Render(frameIndex); }
-	void Simple::SetResolution(uint32_t width, uint32_t height) { m_impl->SetResolution(width, height); }
+	void Simple::SetResolution(glm::uvec2 resolution) { m_impl->SetResolution(resolution); }
 
 } // namespace nwf

@@ -42,6 +42,9 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/lib/glfw)
 # lib/imgui
 add_subdirectory(${CMAKE_SOURCE_DIR}/cmake/imgui)
 
+# lib/glm
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/glm)
+
 # プリプロセッサ
 add_definitions(
   -DUNICODE
@@ -52,6 +55,8 @@ add_definitions(
   -DNOMINMAX
   -D_USE_MATH_DEFINES
   -DNDEBUG
+  -DGLM_FORCE_DEPTH_ZERO_TO_ONE
+  -DGLM_ENABLE_EXPERIMENTAL
 )
 
 # MinSizeRelとRelWithDebInfoの選択肢を抑制
@@ -96,6 +101,7 @@ add_subdirectory(src)
 add_dependencies(NFW imgui)
 add_dependencies(NFW glfw)
 add_dependencies(NFW NRI)
+add_dependencies(NFW glm)
 
 # スタートアッププロジェクトの設定
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT "NFW")
