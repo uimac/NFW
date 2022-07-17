@@ -13,23 +13,16 @@ int main()
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	GLFWwindow* window = glfwCreateWindow(800, 600, "NFW", nullptr, nullptr);
 
-	using namespace nwf;
+	using namespace nfw;
 	Simple* simple = new Simple(glfwGetWin32Window(window), {800, 600});
 	simple->Init();
 
 	uint32_t i = 0;
 	while (!glfwWindowShouldClose(window))
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(0));
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
 		glfwPollEvents();
-
-		bool isActive = glfwGetWindowAttrib(window, GLFW_FOCUSED) != 0;
-		if (!isActive)
-		{
-			i--;
-			continue;
-		}
 
 		simple->Prepare(i);
 		simple->Render(i);

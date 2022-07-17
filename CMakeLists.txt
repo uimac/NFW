@@ -30,20 +30,26 @@ add_compile_options("/std:c++17")
 
 # lib/NRI
 option(NRI_STATIC_LIBRARY "" ON)
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/NRI)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/NRI EXCLUDE_FROM_ALL)
 
 # lib/glfw
 set(GLFW_STANDALONE FALSE)
 option(GLFW_BUILD_DOCS "" OFF)
 option(GLFW_INSTALL "" OFF)
 set(GLFW_LIBRARY_TYPE "STATIC")
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/glfw)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/glfw EXCLUDE_FROM_ALL)
 
 # lib/imgui
-add_subdirectory(${CMAKE_SOURCE_DIR}/cmake/imgui)
+add_subdirectory(${CMAKE_SOURCE_DIR}/cmake/imgui EXCLUDE_FROM_ALL)
 
 # lib/glm
-add_subdirectory(${CMAKE_SOURCE_DIR}/lib/glm)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/glm EXCLUDE_FROM_ALL)
+
+# lib/DirectXTex
+option(BUILD_TOOLS "" OFF)
+option(BUILD_SAMPLE "" OFF)
+option(BUILD_DX11 "" OFF)
+add_subdirectory(${CMAKE_SOURCE_DIR}/lib/DirectXTex EXCLUDE_FROM_ALL)
 
 # プリプロセッサ
 add_definitions(
@@ -78,6 +84,22 @@ if(NOT EXISTS ${DXSDK_LIBRARIES})
 	message(FATAL_ERROR "Not found WindowsSDK. Try adding entry Name:DXSDK_LIBRARIES，Type:PATH，Value: C:/ProgramFiles/WindowsSDKVersion/um/x64")
 endif()
 
+# Shaderコンパイル
+option(DISABLE_SHADER_COMPILATION "disable compilation of shaders" OFF)
+if (NOT DISABLE_SHADER_COMPILATION)
+    set(SHADER_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/src/shaders")
+    set(SHADER_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin/shaders")
+
+    file(MAKE_DIRECTORY ${SHADER_OUTPUT_PATH})
+    include(ShaderCompilation.cmake)
+
+    # Define build rules for the shaders
+    file(GLOB_RECURSE HLSL_FILES "src/shaders/*.hlsl" "src/shaders/*.hlsli")
+    list_hlsl_headers("${HLSL_FILES}" HEADER_FILES)
+    list_hlsl_shaders("${HLSL_FILES}" "${HEADER_FILES}" SHADER_FILES)
+    add_custom_target(NFW_Shaders ALL DEPENDS ${SHADER_FILES} SOURCES "${HEADER_FILES}")
+endif()
+
 # UTF8
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
@@ -87,7 +109,6 @@ get_filename_component(NFWOutputDir
     ${CMAKE_CURRENT_LIST_DIR}/bin
     ABSOLUTE
 )
-set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 set(EXECUTABLE_OUTPUT_PATH ${NFWOutputDir})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${NFWOutputDir})
 
@@ -102,6 +123,8 @@ add_dependencies(NFW imgui)
 add_dependencies(NFW glfw)
 add_dependencies(NFW NRI)
 add_dependencies(NFW glm)
+add_dependencies(NFW DirectXTex)
+add_dependencies(NFW NFW_Shaders)
 
 # スタートアッププロジェクトの設定
 set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT "NFW")

@@ -10,3 +10,6 @@
 [submodule "lib/glm"]
 	path = lib/glm
 	url = https://github.com/g-truc/glm
+[submodule "lib/DirectXTex"]
+	path = lib/DirectXTex
+	url = https://github.com/Microsoft/DirectXTex

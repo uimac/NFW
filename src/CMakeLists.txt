@@ -6,6 +6,7 @@ include_directories(${CMAKE_SOURCE_DIR}/lib/glfw/include)
 include_directories(${CMAKE_SOURCE_DIR}/lib/imgui)
 include_directories(${CMAKE_SOURCE_DIR}/lib/NRI/include)
 include_directories(${CMAKE_SOURCE_DIR}/lib/glm)
+include_directories(${CMAKE_SOURCE_DIR}/lib/DirectXTex/DirectXTex)
 
 file(GLOB NFWSrc
     "*.h"
@@ -33,6 +34,7 @@ target_link_libraries(NFW PRIVATE ${DXSDK_LIBRARIES}/d3d11.lib)
 target_link_libraries(NFW PRIVATE ${DXSDK_LIBRARIES}/dxguid.lib)
 target_link_libraries(NFW PRIVATE ${DXSDK_LIBRARIES}/dxgi.lib)
 target_link_libraries(NFW PRIVATE ${DXSDK_LIBRARIES}/D3DCompiler.lib)
+target_link_libraries(NFW PRIVATE ${CMAKE_BINARY_DIR}/bin/CMake/${CMAKE_CFG_INTDIR}/DirectXTex.lib)
 
 # デバッグ時の作業ディレクトリ
 set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${NFWOutputDir}/${CMAKE_CFG_INTDIR})

@@ -1,10 +1,13 @@
-#include <memory>
-#include <glm/glm.hpp>
+#pragma once
 
-namespace nwf
+#include "Api.h"
+#include "Types.h"
+
+namespace nfw
 {
 	class Simple
 	{
+		DISALLOW_COPY_AND_ASSIGN(Simple);
 	public:
 		Simple(void* hwnd, glm::uvec2 resolution);
 		~Simple();
@@ -18,4 +21,4 @@ namespace nwf
 		class Impl;
 		std::unique_ptr<Impl> m_impl;
 	};
-}
+} // namespace nfw
