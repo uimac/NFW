@@ -91,7 +91,7 @@ if (NOT DISABLE_SHADER_COMPILATION)
     set(SHADER_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin/shaders")
 
     file(MAKE_DIRECTORY ${SHADER_OUTPUT_PATH})
-    include(ShaderCompilation.cmake)
+    include(cmake/ShaderCompilation.cmake)
 
     # Define build rules for the shaders
     file(GLOB_RECURSE HLSL_FILES "src/shaders/*.hlsl" "src/shaders/*.hlsli")
