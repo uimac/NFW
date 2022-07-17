@@ -89,6 +89,7 @@ option(DISABLE_SHADER_COMPILATION "disable compilation of shaders" OFF)
 if (NOT DISABLE_SHADER_COMPILATION)
     set(SHADER_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/src/shaders")
     set(SHADER_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin/shaders")
+    set(DXC_CUSTOM_PATH "${CMAKE_SOURCE_DIR}/tool/dxc_2022_07_13/bin/x64/dxc.exe")
 
     file(MAKE_DIRECTORY ${SHADER_OUTPUT_PATH})
     include(cmake/ShaderCompilation.cmake)
