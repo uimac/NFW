@@ -30,7 +30,7 @@ namespace nfw
 				{
 					const DirectX::TexMetadata& texMeta = m_image.GetMetadata();
 					m_textureDesc.type = nri::TextureType::TEXTURE_2D;
-					m_textureDesc.format = nri::GetFormatDXGI(texMeta.format);
+					m_textureDesc.format = nri::ConvertDXGIFormatToNRI(texMeta.format);
 					m_textureDesc.usageMask = nri::TextureUsageBits::SHADER_RESOURCE;
 					m_textureDesc.size[0] = texMeta.width;
 					m_textureDesc.size[1] = texMeta.height;

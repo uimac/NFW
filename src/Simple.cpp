@@ -10,8 +10,8 @@
 
 namespace nfw
 {
-	constexpr nri::Color<float> COLOR_0 = { 1.0f, 1.0f, 0.0f, 1.0f };
-	constexpr nri::Color<float> COLOR_1 = { 0.46f, 0.72f, 0.0f, 1.0f };
+	constexpr nri::Color32f COLOR_0 = { 1.0f, 1.0f, 0.0f, 1.0f };
+	constexpr nri::Color32f COLOR_1 = { 0.46f, 0.72f, 0.0f, 1.0f };
 
 	struct ConstantBufferLayout
 	{
@@ -39,7 +39,6 @@ namespace nfw
 
 	struct Frame
 	{
-		nri::DeviceSemaphore* deviceSemaphore;
 		nri::CommandAllocator* commandAllocator;
 		nri::CommandBuffer* commandBuffer;
 		nri::Descriptor* constantBufferView;
@@ -57,40 +56,6 @@ namespace nfw
 
 	constexpr uint32_t BUFFERED_FRAME_MAX_NUM = 2;
 	constexpr uint32_t SWAP_CHAIN_TEXTURE_NUM = BUFFERED_FRAME_MAX_NUM;
-
-	bool FindPhysicalDeviceGroup(nri::PhysicalDeviceGroup& dstPhysicalDeviceGroup)
-	{
-		uint32_t deviceGroupNum = 0;
-		nri::Result result = nri::GetPhysicalDevices(nullptr, deviceGroupNum);
-
-		if (deviceGroupNum == 0 || result != nri::Result::SUCCESS)
-		{
-			return false;
-		}
-
-		std::vector<nri::PhysicalDeviceGroup> groups(deviceGroupNum);
-		result = nri::GetPhysicalDevices(groups.data(), deviceGroupNum);
-
-		if (result != nri::Result::SUCCESS)
-		{
-			return false;
-		}
-
-		size_t groupIndex = 0;
-		for (; groupIndex < groups.size(); groupIndex++)
-		{
-			if (groups[groupIndex].type != nri::PhysicalDeviceType::INTEGRATED)
-				break;
-		}
-
-		if (groupIndex == groups.size())
-		{
-			groupIndex = 0;
-		}
-		dstPhysicalDeviceGroup = groups[groupIndex];
-
-		return true;
-	}
 
 	size_t Align(size_t location, size_t align)
 	{
@@ -119,7 +84,6 @@ namespace nfw
 			{
 				NRI.DestroyCommandBuffer(*frame.commandBuffer);
 				NRI.DestroyCommandAllocator(*frame.commandAllocator);
-				NRI.DestroyDeviceSemaphore(*frame.deviceSemaphore);
 				NRI.DestroyDescriptor(*frame.constantBufferView);
 			}
 
@@ -136,8 +100,7 @@ namespace nfw
 			NRI.DestroyBuffer(*m_constantBuffer);
 			NRI.DestroyBuffer(*m_geometryBuffer);
 			NRI.DestroyDescriptorPool(*m_descriptorPool);
-			NRI.DestroyQueueSemaphore(*m_acquireSemaphore);
-			NRI.DestroyQueueSemaphore(*m_releaseSemaphore);
+			NRI.DestroyFence(*m_frameFence);
 			NRI.DestroySwapChain(*m_swapChain);
 
 			nri::DestroyDevice(*m_device);
@@ -147,9 +110,8 @@ namespace nfw
 		{
 			nri::GraphicsAPI graphicsAPI = nri::GraphicsAPI::D3D12;
 			nri::PhysicalDeviceGroup physicalDeviceGroup = {};
-			if (!FindPhysicalDeviceGroup(physicalDeviceGroup)) {
-				return false;
-			}
+			uint32_t deviceGroupNum = 1;
+			NRI_ABORT_ON_FAILURE(nri::GetPhysicalDevices(&physicalDeviceGroup, deviceGroupNum));
 
 			// Device
 			nri::DeviceCreationDesc deviceCreationDesc = {};
@@ -169,6 +131,9 @@ namespace nfw
 
 			// Command queue
 			NRI_ABORT_ON_FAILURE(NRI.GetCommandQueue(*m_device, nri::CommandQueueType::GRAPHICS, m_commandQueue));
+
+			// Fences
+			NRI_ABORT_ON_FAILURE(NRI.CreateFence(*m_device, 0, m_frameFence));
 
 			// Swap chain
 			nri::Format swapChainFormat;
@@ -195,7 +160,7 @@ namespace nfw
 					NRI_ABORT_ON_FAILURE(NRI.CreateTexture2DView(textureViewDesc, colorAttachment));
 
 					nri::ClearValueDesc clearColor = {};
-					clearColor.rgba32f = COLOR_0;
+					clearColor.color32f = COLOR_0;
 
 					nri::FrameBufferDesc frameBufferDesc = {};
 					frameBufferDesc.colorAttachmentNum = 1;
@@ -209,13 +174,9 @@ namespace nfw
 				}
 			}
 
-			NRI_ABORT_ON_FAILURE(NRI.CreateQueueSemaphore(*m_device, m_acquireSemaphore));
-			NRI_ABORT_ON_FAILURE(NRI.CreateQueueSemaphore(*m_device, m_releaseSemaphore));
-
 			// Buffered resources
 			for (Frame& frame : m_frames)
 			{
-				NRI_ABORT_ON_FAILURE(NRI.CreateDeviceSemaphore(*m_device, true, frame.deviceSemaphore));
 				NRI_ABORT_ON_FAILURE(NRI.CreateCommandAllocator(*m_commandQueue, nri::WHOLE_DEVICE_GROUP, frame.commandAllocator));
 				NRI_ABORT_ON_FAILURE(NRI.CreateCommandBuffer(*frame.commandAllocator, frame.commandBuffer));
 			}
@@ -243,8 +204,8 @@ namespace nfw
 
 				nri::DescriptorSetDesc descriptorSetDescs[] =
 				{
-					{descriptorRangeConstant, std::size(descriptorRangeConstant)},
-					{descriptorRangeTexture, std::size(descriptorRangeTexture)},
+					{0, descriptorRangeConstant, std::size(descriptorRangeConstant)},
+					{1, descriptorRangeTexture, std::size(descriptorRangeTexture)},
 				};
 
 				nri::PushConstantDesc pushConstant = { 1, sizeof(float), nri::ShaderStage::FRAGMENT };
@@ -482,11 +443,14 @@ namespace nfw
 			const uint32_t bufferedFrameIndex = frameIndex % BUFFERED_FRAME_MAX_NUM;
 			const Frame& frame = m_frames[bufferedFrameIndex];
 
-			const uint32_t currentTextureIndex = NRI.AcquireNextSwapChainTexture(*m_swapChain, *m_acquireSemaphore);
+			const uint32_t currentTextureIndex = NRI.AcquireNextSwapChainTexture(*m_swapChain);
 			BackBuffer& currentBackBuffer = m_backBuffers[currentTextureIndex];
 
-			NRI.WaitForSemaphore(*m_commandQueue, *frame.deviceSemaphore);
-			NRI.ResetCommandAllocator(*frame.commandAllocator);
+			if (frameIndex >= BUFFERED_FRAME_MAX_NUM)
+			{
+				NRI.Wait(*m_frameFence, 1 + frameIndex - BUFFERED_FRAME_MAX_NUM);
+				NRI.ResetCommandAllocator(*frame.commandAllocator);
+			}
 
 			ConstantBufferLayout* constants = (ConstantBufferLayout*)NRI.MapBuffer(*m_constantBuffer, frame.constantBufferViewOffset, sizeof(ConstantBufferLayout));
 			if (constants)
@@ -526,7 +490,7 @@ namespace nfw
 
 						nri::ClearDesc clearDesc = {};
 						clearDesc.colorAttachmentIndex = 0;
-						clearDesc.value.rgba32f = COLOR_1;
+						clearDesc.value.color32f = COLOR_1;
 						nri::Rect rects[2];
 						rects[0] = { 0, 0, halfWidth, halfHeight };
 						rects[1] = { (int32_t)halfWidth, (int32_t)halfHeight, halfWidth, halfHeight };
@@ -545,8 +509,8 @@ namespace nfw
 						NRI.CmdSetIndexBuffer(*commandBuffer, *m_geometryBuffer, 0, nri::IndexType::UINT16);
 						NRI.CmdSetVertexBuffers(*commandBuffer, 0, 1, &m_geometryBuffer, &m_geometryOffset);
 
-						nri::DescriptorSet* sets[2] = { frame.constantBufferDescriptorSet, m_textureDescriptorSet };
-						NRI.CmdSetDescriptorSets(*commandBuffer, 0, std::size(sets), sets, nullptr);
+						NRI.CmdSetDescriptorSet(*commandBuffer, 0, *frame.constantBufferDescriptorSet, nullptr);
+						NRI.CmdSetDescriptorSet(*commandBuffer, 1, *m_textureDescriptorSet, nullptr);
 
 						nri::Rect scissor = { 0, 0, windowWidth, windowHeight };
 						NRI.CmdSetScissors(*commandBuffer, &scissor, 1);
@@ -566,16 +530,13 @@ namespace nfw
 			}
 			NRI.EndCommandBuffer(*commandBuffer);
 
-			nri::WorkSubmissionDesc workSubmissionDesc = {};
-			workSubmissionDesc.commandBufferNum = 1;
-			workSubmissionDesc.commandBuffers = &commandBuffer;
-			workSubmissionDesc.wait = &m_acquireSemaphore;
-			workSubmissionDesc.waitNum = 1;
-			workSubmissionDesc.signal = &m_releaseSemaphore;
-			workSubmissionDesc.signalNum = 1;
-			NRI.SubmitQueueWork(*m_commandQueue, workSubmissionDesc, frame.deviceSemaphore);
+			nri::QueueSubmitDesc queueSubmitDesc = {};
+			queueSubmitDesc.commandBuffers = &frame.commandBuffer;
+			queueSubmitDesc.commandBufferNum = 1;
+			NRI.QueueSubmit(*m_commandQueue, queueSubmitDesc);
 
-			NRI.SwapChainPresent(*m_swapChain, *m_releaseSemaphore);
+			NRI.SwapChainPresent(*m_swapChain);
+			NRI.QueueSignal(*m_commandQueue, *m_frameFence, 1 + frameIndex);
 		}
 
 		void Render2(uint32_t frameIndex)
@@ -585,11 +546,14 @@ namespace nfw
 			const uint32_t bufferedFrameIndex = frameIndex % BUFFERED_FRAME_MAX_NUM;
 			const Frame& frame = m_frames[bufferedFrameIndex];
 
-			const uint32_t backBufferIndex = NRI.AcquireNextSwapChainTexture(*m_swapChain, *m_acquireSemaphore);
+			const uint32_t backBufferIndex = NRI.AcquireNextSwapChainTexture(*m_swapChain);
 			const BackBuffer& backBuffer = m_backBuffers[backBufferIndex];
 
-			NRI.WaitForSemaphore(*m_commandQueue, *frame.deviceSemaphore);
-			NRI.ResetCommandAllocator(*frame.commandAllocator);
+			if (frameIndex >= BUFFERED_FRAME_MAX_NUM)
+			{
+				NRI.Wait(*m_frameFence, 1 + frameIndex - BUFFERED_FRAME_MAX_NUM);
+				NRI.ResetCommandAllocator(*frame.commandAllocator);
+			}
 
 			nri::CommandBuffer& commandBuffer = *frame.commandBuffer;
 			NRI.BeginCommandBuffer(commandBuffer, nullptr, 0);
@@ -613,11 +577,11 @@ namespace nfw
 					nri::ClearDesc clearDesc = {};
 					clearDesc.colorAttachmentIndex = 0;
 
-					clearDesc.value.rgba32f = { 0.0f, 90.0f / 255.0f, 187.0f / 255.0f, 1.0f };
+					clearDesc.value.color32f = { 0.0f, 90.0f / 255.0f, 187.0f / 255.0f, 1.0f };
 					nri::Rect rect1 = { 0, 0, windowWidth, windowHeight / 2 };
 					NRI.CmdClearAttachments(commandBuffer, &clearDesc, 1, &rect1, 1);
 
-					clearDesc.value.rgba32f = { 1.0f, 213.0f / 255.0f, 0.0f, 1.0f };
+					clearDesc.value.color32f = { 1.0f, 213.0f / 255.0f, 0.0f, 1.0f };
 					nri::Rect rect2 = { 0, (int32_t)windowHeight / 2, windowWidth, windowHeight / 2 };
 					NRI.CmdClearAttachments(commandBuffer, &clearDesc, 1, &rect2, 1);
 				}
@@ -634,16 +598,13 @@ namespace nfw
 
 			const nri::CommandBuffer* commandBufferArray[] = { &commandBuffer };
 
-			nri::WorkSubmissionDesc workSubmissionDesc = {};
-			workSubmissionDesc.commandBufferNum = std::size(commandBufferArray);
-			workSubmissionDesc.commandBuffers = commandBufferArray;
-			workSubmissionDesc.wait = &m_acquireSemaphore;
-			workSubmissionDesc.waitNum = 1;
-			workSubmissionDesc.signal = &m_releaseSemaphore;
-			workSubmissionDesc.signalNum = 1;
+			nri::QueueSubmitDesc queueSubmitDesc = {};
+			queueSubmitDesc.commandBuffers = &frame.commandBuffer;
+			queueSubmitDesc.commandBufferNum = 1;
+			NRI.QueueSubmit(*m_commandQueue, queueSubmitDesc);
 
-			NRI.SubmitQueueWork(*m_commandQueue, workSubmissionDesc, frame.deviceSemaphore);
-			NRI.SwapChainPresent(*m_swapChain, *m_releaseSemaphore);
+			NRI.SwapChainPresent(*m_swapChain);
+			NRI.QueueSignal(*m_commandQueue, *m_frameFence, 1 + frameIndex);
 		}
 
 	private:
@@ -652,8 +613,7 @@ namespace nfw
 		nri::Device* m_device = nullptr;
 		nri::SwapChain* m_swapChain = nullptr;
 		nri::CommandQueue* m_commandQueue = nullptr;
-		nri::QueueSemaphore* m_acquireSemaphore = nullptr;
-		nri::QueueSemaphore* m_releaseSemaphore = nullptr;
+		nri::Fence* m_frameFence = nullptr;
 		nri::DescriptorPool* m_descriptorPool = {};
 
 		nri::Pipeline* m_pipeline = {};
