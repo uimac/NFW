@@ -30,6 +30,7 @@ add_compile_options("/std:c++17")
 
 # lib/NRI
 option(NRI_STATIC_LIBRARY "" ON)
+option (NRI_ENABLE_NONE_SUPPORT "Enable NONE backend" OFF)
 set(GLOBAL_BIN_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib/NRI/" CACHE STRING "")
 add_subdirectory(${CMAKE_SOURCE_DIR}/lib/NRI EXCLUDE_FROM_ALL)
 

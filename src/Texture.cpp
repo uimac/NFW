@@ -30,13 +30,13 @@ namespace nfw
 				{
 					const DirectX::TexMetadata& texMeta = m_image.GetMetadata();
 					m_textureDesc.type = nri::TextureType::TEXTURE_2D;
-					m_textureDesc.format = nri::ConvertDXGIFormatToNRI(texMeta.format);
+					m_textureDesc.format = nri::nriConvertDXGIFormatToNRI(texMeta.format);
 					m_textureDesc.usageMask = nri::TextureUsageBits::SHADER_RESOURCE;
-					m_textureDesc.size[0] = texMeta.width;
-					m_textureDesc.size[1] = texMeta.height;
-					m_textureDesc.size[2] = 1;
+					m_textureDesc.width = texMeta.width;
+					m_textureDesc.height = texMeta.height;
+					m_textureDesc.depth = 1;
 					m_textureDesc.mipNum = texMeta.mipLevels;
-					m_textureDesc.arraySize = texMeta.arraySize;
+					m_textureDesc.layerNum = texMeta.arraySize;
 					m_textureDesc.sampleNum = 1;
 					return true;
 				}
@@ -63,11 +63,8 @@ namespace nfw
 				}
 
 				m_uploadDesc.subresources = m_subresources.data();
-				m_uploadDesc.mipNum = m_textureDesc.mipNum;
-				m_uploadDesc.arraySize = m_textureDesc.arraySize;
 				m_uploadDesc.texture = m_texture;
-				m_uploadDesc.nextLayout = nri::TextureLayout::SHADER_RESOURCE;
-				m_uploadDesc.nextAccess = nri::AccessBits::SHADER_RESOURCE;
+				m_uploadDesc.after = { nri::AccessBits::SHADER_RESOURCE, nri::Layout::SHADER_RESOURCE };
 			}
 			return res;
 		}
