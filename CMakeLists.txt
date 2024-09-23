@@ -21,7 +21,7 @@ if(${GIT_FOUND} AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
 endif()
 
 # コンパイルフラグ
-set(CMAKE_CXX_FLAGS "/EHsc /wd4190 /bigobj /MP")
+set(CMAKE_CXX_FLAGS "/EHsc /wd4190 /wd4819 /bigobj /MP")
 set(CMAKE_CXX_FLAGS_DEBUG "/MD /Od /Z7 ")
 set(CMAKE_CXX_FLAGS_RELEASE "/MD ")
 
